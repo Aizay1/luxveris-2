@@ -1,0 +1,14 @@
+{
+    "name": "luxveris",
+    "version": "1.0.0",
+    "scripts": {
+      "build": "tailwindcss -i ./assets/app.css -o ./assets/output.css --minify",
+      "watch": "tailwindcss -i ./assets/app.css -o ./assets/output.css --watch"
+    },
+    "devDependencies": {
+      "tailwindcss": "^3.4.10",
+      "autoprefixer": "^10.4.20",
+      "postcss": "^8.4.31"
+    }
+  }
+  
