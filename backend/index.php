@@ -4,16 +4,35 @@ require_once __DIR__ . '/helpers.php';
 
 $pdo = db();
 
-// Optional category filter
+// Get category filter & search query
 $category = $_GET['category'] ?? '';
+$search = $_GET['search'] ?? '';
 $params = [];
-$sql = "SELECT n.*, u.username AS author FROM news n LEFT JOIN users u ON u.id = n.author_id";
-if ($category && in_array($category, ['Educational','Political','Economical','Technological'])) {
-    $sql .= " WHERE category = ?";
+$sql = "SELECT n.*, u.username AS author FROM news n LEFT JOIN users u ON u.id = n.author_id WHERE 1=1";
+
+// Filter by category
+$validCategories = ['Educational','Political','Economical','Technological'];
+if ($category && in_array($category, $validCategories)) {
+    $sql .= " AND n.category = ?";
     $params[] = $category;
 }
-$sql .= " ORDER BY created_at DESC LIMIT 50";
 
+// Search by multiple fields
+if ($search) {
+  $sql .= " AND (
+      n.title LIKE ? OR
+      n.content LIKE ? OR
+      n.external_link LIKE ? OR
+      n.contact_email LIKE ? OR
+      n.contact_phone LIKE ?
+  )";
+  $searchTerm = "%$search%";
+  $params = array_merge($params, [
+      $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm
+  ]);
+}
+
+$sql .= " ORDER BY n.created_at DESC LIMIT 50";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $items = $stmt->fetchAll();
@@ -32,7 +51,7 @@ $items = $stmt->fetchAll();
 
 <!-- Header -->
 <header class="sticky top-0 z-40 backdrop-blur bg-white/80 border-b shadow-sm">
-  <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+  <div class="w-full px-6 py-4 flex items-center justify-between">
     <a href="/" class="text-3xl font-extrabold tracking-tight text-indigo-600 hover:text-indigo-800 transition">Luxveris</a>
     
     <!-- Nav -->
@@ -44,17 +63,20 @@ $items = $stmt->fetchAll();
       <a class="hover:text-indigo-600 transition" href="/?category=Technological">Technological</a>
     </nav>
     
+    <!-- Search + Admin -->
     <div class="flex items-center gap-3">
+      <form method="get" class="flex gap-2">
+        <input type="text" name="search" placeholder="Search news..." value="<?= h($search) ?>" class="border rounded-lg p-2">
+        <button class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Go</button>
+      </form>
       <a class="px-4 py-2 rounded-xl border border-gray-300 hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-700 transition" href="/login.php">Admin</a>
     </div>
   </div>
 </header>
 
 <!-- Main -->
-<main class="max-w-7xl mx-auto px-4 py-10">
-  <?= flash(); ?>
-  
-  <div class="grid md:grid-cols-3 gap-8">
+<main class="w-full px-6 py-10">
+<div class="grid md:grid-cols-3 gap-8 w-full">
     <?php foreach ($items as $n): 
       $badgeClass = [
         'Educational'=>'badge-edu','Political'=>'badge-pol',
@@ -82,14 +104,14 @@ $items = $stmt->fetchAll();
     <?php endforeach; ?>
     
     <?php if (!$items): ?>
-      <div class="md:col-span-3 text-center text-gray-500 py-10">🚀 No news yet. Check back soon.</div>
+      <div class="md:col-span-3 text-center text-gray-500 py-10">🚀 No news found.</div>
     <?php endif; ?>
-  </div>
+</div>
 </main>
 
 <!-- Footer -->
 <footer class="border-t bg-white mt-12">
-  <div class="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
+  <div class="w-full px-6 py-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
     <p>© <?= date('Y') ?> <span class="font-semibold">Luxveris</span>. All rights reserved.</p>
     <div class="flex gap-4 mt-3 md:mt-0">
       <a href="#" class="hover:text-indigo-600">Privacy</a>

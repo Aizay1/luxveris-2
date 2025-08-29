@@ -11,3 +11,4 @@ function flash() {
     }
     return '';
 }
+
